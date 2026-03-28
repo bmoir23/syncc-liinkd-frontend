@@ -102,6 +102,86 @@ Copy `frontend/.env.example` to `frontend/.env.local` and fill in:
 
 > All variables are `NEXT_PUBLIC_*` (client-side only). No server secrets needed.
 
+## Recommended Next Step: LLM Server + Automations Backend + Connector
+
+To keep this frontend clean and production-safe, use a **3-layer integration model**:
+
+1. **Frontend (this repo)**  
+   - Renders UI and sends user actions to your backend API.
+   - Never stores model/provider secrets.
+2. **Automations Backend (new service)**  
+   - Owns auth, rate limiting, retries, logging, and workflow orchestration.
+   - Calls LLM server and/or n8n webhooks.
+3. **LLM Server (new service)**  
+   - Single gateway for model providers (OpenAI-compatible API is ideal).
+   - Can point to Ollama/vLLM/local models in dev, hosted providers in prod.
+
+### Suggested Service Contracts
+
+- `POST /api/chat`  
+  Backend receives `{ userId, message, context }` and returns `{ reply, traceId }`.
+- `POST /api/automations/trigger`  
+  Backend receives `{ workflow, payload }` and triggers n8n/job runner.
+- `GET /api/health`  
+  Health endpoint for frontend checks and CI smoke tests.
+
+### Environment Variable Plan (for next implementation phase)
+
+Keep secrets in backend only. For frontend, add only public base URLs:
+
+```bash
+# Example: frontend/.env.local (future)
+NEXT_PUBLIC_AUTOMATIONS_API_BASE_URL=http://localhost:4000
+NEXT_PUBLIC_LLM_GATEWAY_BASE_URL=http://localhost:8000
+```
+
+For backend (separate repo/service), keep secret values server-side only:
+
+```bash
+# backend/.env (future, do not expose to client)
+OPENAI_API_KEY=...
+N8N_WEBHOOK_SECRET=...
+JWT_SECRET=...
+```
+
+### Implementation Sequence (Minimal Risk)
+
+1. Stand up backend with `/api/health` and `/api/chat` mock responses.
+2. Point frontend connector(s) to backend base URL (feature-flagged).
+3. Add n8n trigger endpoint in backend with request validation + retries.
+4. Add LLM provider adapter behind backend (one interface, many providers).
+5. Add observability: request IDs, structured logs, and failure metrics.
+
+## Branching & Delivery Best Practices
+
+Use a lightweight GitHub Flow with protected `main`:
+
+- `main` = always deployable
+- Feature branches:
+  - `feat/<scope>-<short-description>`
+  - `fix/<scope>-<short-description>`
+  - `docs/<scope>-<short-description>`
+
+Recommended PR checklist:
+
+- [ ] Scope is small and focused
+- [ ] Lint, typecheck, build pass locally
+- [ ] Env/config changes documented
+- [ ] API contract changes reflected in README
+- [ ] Security review completed (no client-side secrets, input validated)
+
+## Documentation to Impress Employers (Portfolio-Ready)
+
+For job opportunities, keep docs outcome-oriented and easy to review:
+
+1. **3-layer integration model section** (this README): components + data flow.
+2. **Setup section**: exact local run commands for frontend/backend/LLM.
+3. **API contract examples**: request/response payloads for key endpoints.
+4. **Branching/quality process**: how you ship safely (CI + PR checklist).
+5. **Roadmap**: short list of next milestones with measurable outcomes.
+
+This demonstrates product thinking, engineering discipline, and production readiness.
+
 ## Dev Container (Docker)
 
 The `.devcontainer` folder contains a Docker dev environment using **bun**.
