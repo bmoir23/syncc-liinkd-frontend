@@ -1,4 +1,4 @@
-# Syncc Liinkd Frontend
+# SynccOS Frontend
 
 A modern, dark-themed SaaS frontend for Syncc Liinkd — a professional link-in-bio and AI-powered booking platform. Built with **Next.js 15 App Router**, **TypeScript**, **Tailwind CSS**, **shadcn/ui**, **Framer Motion**, and **Zustand**.
 
